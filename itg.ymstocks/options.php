@@ -18,21 +18,43 @@ $UpdateStocks = new UpdateStock();
 
 // echo $UpdateStocks->test();
 
-$APPLICATION->SetTitle('передача остатков яндекс маркет');
+$APPLICATION->SetTitle('передача остатков яндекс маркет экспресс ');
 require($_SERVER["DOCUMENT_ROOT"] . "/bitrix/modules/main/include/prolog_admin_after.php");
-
-        $arBrandId =  ($_POST['brend_id']) ? $_POST['brend_id'] : unserialize( \COption::GetOptionString('itg.ymstocks','brend_id'));
+        
+        // индентикфикаторы брендов на сайте
+        $arBrandId =  ($_POST['arBrandId']) ? $_POST['brend_id'] : unserialize( \COption::GetOptionString('itg.ymstocks','brend_id'));
+        //индентификатор компании в яндекс маркет
          $campaign_id =  \COption::GetOptionString('itg.ymstocks','campaign_id');
+         // индентификатор склада в яндекс маркет
          $warehouse_id =  \COption::GetOptionString('itg.ymstocks','warehouse_id');
+         // Идентификатор приложения  в яндекс маркет
          $client_id =  \COption::GetOptionString('itg.ymstocks','client_id');
-         $store_id =  \COption::GetOptionString('itg.ymstocks','store_id');
+         // индентификатор склада  на сайте
+         $store_id =  ($_POST['store_id']) ? $_POST['store_id'] : unserialize( \COption::GetOptionString('itg.ymstocks','store_id'));
+         // токен доступа в яндекс маркет
          $token =  \COption::GetOptionString('itg.ymstocks','token');
 
 
 
 ?>
 <?
-// echo "<pre>";
+ $property_enums = CIBlockPropertyEnum::GetList(Array("DEF"=>"DESC", "SORT"=>"ASC"), Array("IBLOCK_ID"=>58, "CODE"=>"PROIZVODITEL"));
+while($enum_fields = $property_enums->GetNext())
+{
+  // echo $enum_fields["ID"]." - ".$enum_fields["VALUE"]."<br>";
+  $arBrandsList[] = ['ID'=>$enum_fields['ID'],'NAME'=>$enum_fields['VALUE']];
+
+   
+}
+
+foreach ($arBrandsList as $key => $item) {
+    foreach ($arBrandId as $k => $item_selected) {
+         if ($item_selected == $item['ID']) {
+            $arBrandsList[$key]['SELECTED'] = "Y";
+         }
+    }
+}
+
  $rsStoreProduct = \Bitrix\Catalog\StoreTable::getList(array(
                 'filter' => array(),           
                 'select' => array('TITLE','ID'),
@@ -43,15 +65,14 @@ require($_SERVER["DOCUMENT_ROOT"] . "/bitrix/modules/main/include/prolog_admin_a
 
         foreach ($rsStoreProduct as $key => $item) {
             
-            foreach ($arBrandId as $k => $item_selected) {
+            foreach ($store_id as $k => $item_selected) {
                 if ($item_selected == $item['ID']) {
                     // code...
                      $rsStoreProduct[$key]['SELECTED'] = 'Y';
                 }
             }
         }
-
-                     // print_r($rsStoreProduct);  
+                    
     
 
 ?>
@@ -82,32 +103,43 @@ require($_SERVER["DOCUMENT_ROOT"] . "/bitrix/modules/main/include/prolog_admin_a
                     
                     <div style="width: 325px; display:flex; margin-bottom:10px ;">
                         
-                        <input type="checkbox" name="save_from_yandex_market" >
+                        <input id='checkbox' type="checkbox" name="save_from_yandex_market" >
                         <label> получить окен из настроек модуля яндекс  маркет</label>
                     </div>
                    <div style="width: 325px; display:flex; margin-bottom:10px ;">
-                        <input style="width:100%" type="text" placeholder="Идентификатор приложения" name="client_id" id="">
+                        <input style="width:100%" type="text" placeholder="Идентификатор приложения" 
+                       value="<?=$client_id?>"
+                         name="client_id" id="">
                     </div>
                     <div style="display:flex; width: 325px; margin-bottom:10px ;">
-                        <input style="width:100%"  type="text" placeholder="OAuth-токен приложения" name="token" id="">
+                        <input  style="width:100%"  type="text" placeholder="OAuth-токен приложения" 
+                        value="<?=$token?>" 
+                        name="token" id="">
                     </div>
                     <div style="display:flex; margin-bottom:10px ; width: 325px;">
-                        <input style="width:100%"  type="text" placeholder="Идентификатор кампании" name="campaign_id" id="">
+                        <input style="width:100%"  type="text" placeholder="Идентификатор кампании"
+                        value="<?=$campaign_id?>" 
+                         name="campaign_id" id="">
                     </div>
                     <div style="display:flex; margin-bottom:10px ; width: 325px;">
-                        <input type="text" placeholder="Идентификатор склада" name="warehouse_id" id="" style="width:100%" >
+                        <input type="text" placeholder="Идентификатор склада" 
+                        value="<?=$warehouse_id?>" 
+                        name="warehouse_id" id="" style="width:100%" >
                     </div>
                     <div style="display:flex; flex-direction: column; margin-bottom:10px ; width: 325px;" >
-                        <label>Склад</label>
-                        <select name="store_id" id="store_id" style="width:100%" >
-                            <option value="1">1</option>
-                            <option value="2">2</option>
+                        <label>бренд</label>
+                        <select name="brend_id[]" multiple id="brend_id" style="width:100%" >
+                            <?foreach($arBrandsList as $key=>$item):?>
+                            <option 
+                            <?if($item['SELECTED'] == 'Y'){echo 'selected';}?>
+                            value="<?=$item['ID']?>"><?=$item['NAME']?></option>
+                            <?endforeach?>
                         </select>
                     </div>
 
                     <div style="flex-direction: column; display:flex; margin-bottom:10px ;width: 325px;">
-                         <label>Бренд</label>
-                         <select name="brend_id[]" id="brend_id" multiple style="width:100%" >
+                         <label>склад</label>
+                         <select name="store_id[]" id="store_id" multiple style="width:100%" >
 
                             <?foreach($rsStoreProduct as $key => $item):?>
                                  
@@ -124,7 +156,7 @@ require($_SERVER["DOCUMENT_ROOT"] . "/bitrix/modules/main/include/prolog_admin_a
                 </div>
             </div>
             
-             
+            
 
         <?$tabControl->Buttons();?>
                 
@@ -136,15 +168,20 @@ require($_SERVER["DOCUMENT_ROOT"] . "/bitrix/modules/main/include/prolog_admin_a
 
            
     </form>
+
+
+    <script>
+        $(document).ready(function(){
+
+            let checkBox  = $('#checkbox');
+            console.log(checkBox)
+        });
+    </script>
 <?
     
-//  $property_enums = CIBlockPropertyEnum::GetList(Array("DEF"=>"DESC", "SORT"=>"ASC"), Array("IBLOCK_ID"=>58, "CODE"=>"PROIZVODITEL"));
-// while($enum_fields = $property_enums->GetNext())
-// {
-//   echo $enum_fields["ID"]." - ".$enum_fields["VALUE"]."<br>";
-// }
+ 
 // echo "<pre>";
-
+// print_r($arBrandsList);
 // print_r($_POST);
 if ($_POST['save_option']) {
 
@@ -152,10 +189,16 @@ if ($_POST['save_option']) {
     COption::SetOptionString("itg.ymstocks","token",$_POST['token']);
     COption::SetOptionString("itg.ymstocks","campaign_id",$_POST['campaign_id']);
     COption::SetOptionString("itg.ymstocks","warehouse_id",$_POST['warehouse_id']);
-    COption::SetOptionString("itg.ymstocks","store_id",$_POST['store_id']);
+    COption::SetOptionString("itg.ymstocks","store_id",serialize($_POST['store_id']));
     COption::SetOptionString("itg.ymstocks","brend_id",serialize($_POST['brend_id']));
 
     $arBrandId = $_POST['brend_id'];
+    $warehouse_id = $_POST['warehouse_id'];
+    $token = $_POST['token'];
+    $campaign_id = $_POST['campaign_id'];
+    $store_id = $_POST['store_id'];
+    $client_id = $_POST['client_id'];
+
 }
 
 
@@ -168,6 +211,13 @@ if ($_POST['update_store']) {
 
     // $UpdateStocks->test();
 }
+
+
+/*
+
+    получить список брендов из свойства бренды
+    сохранение 
+*/
 
 
 ?>
